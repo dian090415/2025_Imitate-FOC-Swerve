@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -9,6 +10,10 @@ import frc.robot.SwerveConstants;
 import frc.robot.lib.helpers.IDashboardProvider;
 import frc.robot.lib.motor.SwerveTalon;
 import frc.robot.lib.swerve.TurnEncoder;
+import com.ctre.phoenix6.controls.*;
+import com.ctre.phoenix6.hardware.*;
+import com.ctre.phoenix6.signals.*;
+import frc.robot.SwerveConstants;
 
 public class SwerveModule implements IDashboardProvider {
     private final SwerveTalon driveMotor;
@@ -20,6 +25,10 @@ public class SwerveModule implements IDashboardProvider {
 
     private final String motorName;
 
+    private final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);// TODO
+
+    private final SimpleMotorFeedforward turnFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);// TODO
+
     /**
      * Constructs a SwerveModule and configures the driving and turning motor,
      * encoder, and PID controller. This configuration is specific to the REV
@@ -27,14 +36,21 @@ public class SwerveModule implements IDashboardProvider {
      * Encoder.
      */
     public SwerveModule(
-        int driveMotorPort, int turnMotorPort, int turnEncoderPort,
-        boolean driveMotorReverse, boolean turnMotorReverse,
-        String motorName
-    ) {
+            int driveMotorPort, int turnMotorPort, int turnEncoderPort,
+            boolean driveMotorReverse, boolean turnMotorReverse,
+            String motorName) {
         this.registerDashboard();
 
         this.driveMotor = new SwerveTalon(driveMotorPort, driveMotorReverse, SwerveConstants.DRIVE_GEAR_RATIO);
         this.turnMotor = new SwerveTalon(turnMotorPort, turnMotorReverse, SwerveConstants.TURN_GEAR_RATIO);
+
+        turnMotor.config_kP(0, 1.0);
+        turnMotor.config_kI(0, 0.0);
+        turnMotor.config_kD(0, 0.1);
+
+        driveMotor.config_kP(0, 1.0);
+        driveMotor.config_kI(0, 0.0);
+        driveMotor.config_kD(0, 0.1);
 
         this.turnEncoder = new TurnEncoder(turnEncoderPort);
 
@@ -58,9 +74,8 @@ public class SwerveModule implements IDashboardProvider {
      */
     public SwerveModuleState getState() {
         return new SwerveModuleState(
-            this.driveMotor.getMotorVelocity(),
-            Rotation2d.fromRotations(this.turnEncoder.getAbsolutePositionRotations())
-        );
+                this.driveMotor.getMotorVelocity(),
+                Rotation2d.fromRotations(this.turnEncoder.getAbsolutePositionRotations()));
     }
 
     /**
@@ -70,9 +85,8 @@ public class SwerveModule implements IDashboardProvider {
      */
     public SwerveModulePosition getPosition() {
         return new SwerveModulePosition(
-            this.driveMotor.getMotorPosition(),
-            Rotation2d.fromRotations(this.turnEncoder.getAbsolutePositionRotations())
-        );
+                this.driveMotor.getMotorPosition(),
+                Rotation2d.fromRotations(this.turnEncoder.getAbsolutePositionRotations()));
     }
 
     /**
@@ -85,14 +99,28 @@ public class SwerveModule implements IDashboardProvider {
             this.stop();
             return;
         }
-        desiredState.optimize(this.getState().angle);
 
-        double driveOutput = desiredState.speedMetersPerSecond / SwerveConstants.MAX_SPEED;
-        double turnOutput = this.turnPid.calculate(
-            this.turnEncoder.getAbsolutePositionRotations(), desiredState.angle.getRotations());
+        // 優化方向（避免不必要的大旋轉）
+        desiredState = SwerveModuleState.optimize(desiredState, this.getState().angle);
 
-        this.driveMotor.set(driveOutput);
-        this.turnMotor.set(turnOutput);
+        gettick();
+
+        double wheelRPS = desiredState.speedMetersPerSecond / (2 * Math.PI * SwerveConstants.WHEEL_RADIUS);
+        double motorRPS = wheelRPS * SwerveConstants.DRIVE_GEAR_RATIO;
+        double targetVelocityRPS = motorRPS * 2048 / 10.0;
+        double ffVolts = driveFF.calculate(desiredState.speedMetersPerSecond);
+
+        // --- Turn: 使用 TalonFX 的 Position 模式控制 ---
+        double targetRotations = desiredState.angle.getRotations(); // 0~1 range
+        double targetTicks = targetRotations * 2048.0;
+
+        driveTalon.set(ControlMode.Velocity, targetVelocityRPS,
+                DemandType.ArbitraryFeedForward, ffVolts / 12.0);
+        this.turnMotor.set(
+                ControlMode.Position,
+                targetTicks,
+                DemandType.ArbitraryFeedForward,
+                ffVolts / 12.0);
     }
 
     // Put Drive Velocity and Turn Position to SmartDashboard.
@@ -100,12 +128,18 @@ public class SwerveModule implements IDashboardProvider {
     public void putDashboard() {
         SmartDashboard.putNumber("SwerveState/" + this.motorName + " Drive Vel", this.driveMotor.getMotorVelocity());
         SmartDashboard.putNumber("SwerveState/" + this.motorName + " Drive Pos", this.driveMotor.getMotorPosition());
-        SmartDashboard.putNumber("SwerveState/" + this.motorName + " Turn Pos", this.turnEncoder.getAbsolutePositionRotations());
+        SmartDashboard.putNumber("SwerveState/" + this.motorName + " Turn Pos",
+                this.turnEncoder.getAbsolutePositionRotations());
     }
 
     // Stop module.
     public void stop() {
         this.driveMotor.set(0.0);
         this.turnMotor.set(0.0);
+    }
+
+    public void gettick() {
+        double absoluteTicks = turnEncoder.getAbsolutePositionTicks(); // 例如 90 度
+        this.turnMotor.setSelectedSensorPosition(absoluteTicks);
     }
 }

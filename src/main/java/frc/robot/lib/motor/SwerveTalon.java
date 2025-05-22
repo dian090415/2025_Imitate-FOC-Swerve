@@ -5,6 +5,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+
 import frc.robot.SwerveConstants;
 
 public class SwerveTalon extends TalonFX {
@@ -42,5 +43,21 @@ public class SwerveTalon extends TalonFX {
     
     public double getMotorPosition() {
         return this.getPosition().getValueAsDouble() * this.gearRatio * 2.0 * SwerveConstants.WHEEL_RADIUS * Math.PI;
+    }
+
+    public void setSelectedSensorPosition(double absoluteTicks){
+        this.setSelectedSensorPosition(absoluteTicks);
+    }
+
+    public void config_kP(int i, double d) {
+        this.config_kP(i,d);
+    }
+
+    public void config_kI(int i, double d) {
+        this.config_kI(i, d);
+    }
+
+    public void config_kD(int i, double d) {
+        this.config_kD(i, d);
     }
 }
