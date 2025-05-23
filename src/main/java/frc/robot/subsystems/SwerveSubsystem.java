@@ -306,4 +306,8 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
         SmartDashboard.putBoolean("Gyro Connect", this.isGyroConnected());
         SmartDashboard.putNumber("GyroAngle", this.getGyroAngle());
     }
+
+    public void test(){
+        
+    }
 }

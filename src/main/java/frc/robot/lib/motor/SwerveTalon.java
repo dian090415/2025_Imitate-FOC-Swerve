@@ -1,35 +1,32 @@
 package frc.robot.lib.motor;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
-
 import frc.robot.SwerveConstants;
 
 public class SwerveTalon extends TalonFX {
     private double gearRatio;
 
-    @SuppressWarnings("removal")
     public SwerveTalon(int motorPort, boolean reverse, double gearRatio) {
         super(motorPort);
-        // this.clearStickyFaults();
+
         this.setNeutralMode(NeutralModeValue.Brake);
         this.setInverted(reverse);
-        // this.resetSignalFrequencies();
 
         CurrentLimitsConfigs currentConfig = new CurrentLimitsConfigs()
             .withStatorCurrentLimitEnable(true)
             .withStatorCurrentLimit(35.0)
             .withSupplyCurrentLimitEnable(true)
-            .withSupplyCurrentLimit(35.0);
-        currentConfig.SupplyCurrentLimit = 120.0;
-        currentConfig.SupplyCurrentLimitEnable = true;
-        currentConfig.SupplyCurrentLowerLimit = 40.0;
+            .withSupplyCurrentLimit(35.0)
+            .withSupplyCurrentLowerLimit(40.0);
 
-        TalonFXConfiguration FXConfig = new TalonFXConfiguration().withCurrentLimits(currentConfig);
-        this.getConfigurator().refresh(FXConfig);
+        TalonFXConfiguration FXConfig = new TalonFXConfiguration();
+        FXConfig.CurrentLimits = currentConfig;
+        this.getConfigurator().apply(FXConfig);
+
         this.gearRatio = gearRatio;
     }
 
@@ -40,24 +37,30 @@ public class SwerveTalon extends TalonFX {
     public double getMotorVelocity() {
         return this.getVelocity().getValueAsDouble() * this.gearRatio * 2.0 * SwerveConstants.WHEEL_RADIUS * Math.PI;
     }
-    
+
     public double getMotorPosition() {
         return this.getPosition().getValueAsDouble() * this.gearRatio * 2.0 * SwerveConstants.WHEEL_RADIUS * Math.PI;
     }
 
-    public void setSelectedSensorPosition(double absoluteTicks){
-        this.setSelectedSensorPosition(absoluteTicks);
+    public void setSelectedSensorPosition(double absoluteTicks) {
+        this.setPosition(absoluteTicks);
     }
 
-    public void config_kP(int i, double d) {
-        this.config_kP(i,d);
+    public void config_kP(double kP) {
+        Slot0Configs slot0 = new Slot0Configs();
+        slot0.kP = kP;
+        this.getConfigurator().apply(slot0);
     }
 
-    public void config_kI(int i, double d) {
-        this.config_kI(i, d);
+    public void config_kI(double kI) {
+        Slot0Configs slot0 = new Slot0Configs();
+        slot0.kI = kI;
+        this.getConfigurator().apply(slot0);
     }
 
-    public void config_kD(int i, double d) {
-        this.config_kD(i, d);
+    public void config_kD(double kD) {
+        Slot0Configs slot0 = new Slot0Configs();
+        slot0.kD = kD;
+        this.getConfigurator().apply(slot0);
     }
-}
+} 
