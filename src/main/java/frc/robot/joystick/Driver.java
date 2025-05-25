@@ -3,6 +3,7 @@ package frc.robot.joystick;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.SwerveConstants;
 
 public class Driver extends XboxController {
@@ -31,5 +32,14 @@ public class Driver extends XboxController {
 
     public double getBrake() {
         return 1.0 - MathUtil.applyDeadband(this.getRightTriggerAxis(), SwerveConstants.DEAD_BAND) * 0.8;
+    }
+    public Trigger test(){
+        return new Trigger(this::getXButton);
+    }
+    public Trigger start(){
+        return new Trigger(this::getAButton);
+    }
+    public Trigger stop(){
+        return new Trigger(this::getBButton);
     }
 }

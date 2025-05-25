@@ -6,6 +6,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.SwerveConstants;
 import frc.robot.lib.helpers.IDashboardProvider;
@@ -49,16 +53,8 @@ public class SwerveModule implements IDashboardProvider {
     private final SimpleMotorFeedforward turnFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);// TODO
 
 
-    // private final VoltageOut voltagRequire = new VoltageOut(0.0);
-    // private final SysIdRoutine sysIdRoutine = new SysIdRoutine(
-    //         new SysIdRoutine.Config(Volts.of(2).per(Second), Volts.of(5),
-    //                 null, (state) -> SignalLogger.writeString("state", state.toString())),
-    //         new SysIdRoutine.Mechanism(
-    //                 (volts) -> {
-    //                     this.turnMotor.setControl(voltagRequire.withOutput(volts.in(Volts)));
-    //                 },
-    //                 null,
-    //                 null));
+    private final VoltageOut voltagRequire = new VoltageOut(0.0);
+    private final SysIdRoutine sysIdRoutine;
     /**
      * Constructs a SwerveModule and configures the driving and turning motor,
      * encoder, and PID controller. This configuration is specific to the REV
@@ -90,6 +86,19 @@ public class SwerveModule implements IDashboardProvider {
 
         this.motorName = motorName;
         this.resetEncoders();
+
+        double absoluteTicks = turnEncoder.getAbsolutePositionTicks();
+        this.turnMotor.setSelectedSensorPosition(absoluteTicks);
+
+        sysIdRoutine =  new SysIdRoutine(
+            new SysIdRoutine.Config(Volts.of(2).per(Second), Volts.of(5),
+                    null, (state) -> SignalLogger.writeString("state", state.toString())),
+            new SysIdRoutine.Mechanism(
+                    (volts) -> {
+                        this.turnMotor.setControl(voltagRequire.withOutput(volts.in(Volts)));
+                    },
+                    null,
+                    null));
     }
 
     public void resetEncoders() {
@@ -134,8 +143,6 @@ public class SwerveModule implements IDashboardProvider {
         desiredState.optimize(this.getState().angle);
 
 
-        gettick();
-
         double wheelRPS = desiredState.speedMetersPerSecond / (2 * Math.PI * SwerveConstants.WHEEL_RADIUS);
         double motorRPS = wheelRPS * SwerveConstants.DRIVE_GEAR_RATIO;
     
@@ -175,11 +182,29 @@ public class SwerveModule implements IDashboardProvider {
         this.turnMotor.set(0.0);
     }
 
-    public void gettick() {
-        double absoluteTicks = turnEncoder.getAbsolutePositionTicks();
-        this.turnMotor.setSelectedSensorPosition(absoluteTicks);
+    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+        return this.sysIdRoutine.quasistatic(direction);
     }
-    public void test(){
 
+    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+        return this.sysIdRoutine.dynamic(direction);
+    }
+
+    public Command sysIdTest() {
+        return Commands.sequence(
+                this.sysIdQuasistatic(SysIdRoutine.Direction.kForward)
+                        .raceWith(new WaitUntilCommand(2)),
+                new WaitCommand(2),
+
+                this.sysIdQuasistatic(SysIdRoutine.Direction.kReverse)
+                        .raceWith(new WaitUntilCommand(2)),
+                new WaitCommand(2),
+
+                this.sysIdDynamic(SysIdRoutine.Direction.kForward)
+                        .raceWith(new WaitUntilCommand(2)),
+                new WaitCommand(2),
+
+                this.sysIdDynamic(SysIdRoutine.Direction.kReverse)
+                        .raceWith(new WaitUntilCommand(2)));
     }
 }

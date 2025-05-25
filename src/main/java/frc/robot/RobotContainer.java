@@ -13,10 +13,20 @@ public class RobotContainer {
 		this.swerveSubsystem.setDefaultCommand(new SwerveDriveCmd(
 			this.swerveSubsystem,
 			driver::getXDesiredSpeed, driver::getYDesiredSpeed, driver::getRotationSpeed));
+			this.configBindings();
 	}
 
 	public void configButtonStationBindings() {
 	}
+
+	public void configBindings() {
+		  this.driver.test()
+			.onTrue(this.swerveSubsystem.testCommand());
+		  this.driver.start()
+			.onTrue(this.swerveSubsystem.startCommand());
+		  this.driver.stop()
+			.onTrue(this.swerveSubsystem.stopCommand());
+	  }
 
 	public Command getAutonomousCommand() {
 		return null;

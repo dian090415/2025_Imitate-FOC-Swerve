@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.SignalLogger;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 
@@ -21,6 +22,8 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
 import frc.robot.SwerveConstants;
@@ -308,6 +311,20 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
     }
 
     public void test(){
-        
+        this.frontLeft.sysIdTest();
+        this.frontRight.sysIdTest();
+        this.backLeft.sysIdTest();
+        this.backRight.sysIdTest();
+    }
+    public Command testCommand(){
+        return Commands.runOnce(() -> test());
+    }
+
+    public Command startCommand() {
+        return Commands.runOnce(SignalLogger::start);
+    }
+
+    public Command stopCommand() {
+        return Commands.runOnce(SignalLogger::stop);
     }
 }
