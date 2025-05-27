@@ -1,5 +1,8 @@
 package frc.robot.subsystems;
 
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
+
 import com.ctre.phoenix6.SignalLogger;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
@@ -61,6 +64,7 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
     private final SwerveDriveOdometry odometry;
     private final SwerveDrivePoseEstimator poseEstimator;
     private final Field2d field;
+    @AutoLogOutput private boolean velocityMode = false;
 
     // Publishers for tracking swerve drive poses
     private final StructPublisher<Pose2d> swerveNow = NetworkTableInstance.getDefault()
@@ -124,6 +128,7 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
                 builder.addDoubleProperty("BackRight Velocity", () -> backRight.getState().speedMetersPerSecond, null);
 
                 builder.addDoubleProperty("Robot Heading", () -> getRotation().getRadians(), null);
+
             }
         });
     }
@@ -138,6 +143,17 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
         this.swerveNow.set(this.getPose());
         this.odometry.update(this.getHeading(), this.getModulePosition());
         this.poseEstimator.update(this.getRotation(), this.getModulePosition());
+        if (DriverStation.isDisabled()) {
+            Logger.recordOutput("Drive/SwerveStates/Setpoints", new SwerveModuleState[] {});
+            Logger.recordOutput("Drive/SwerveStates/SetpointsUnoptimized", new SwerveModuleState[] {});
+          }
+        if (DriverStation.isDisabled()) {
+            this.stopModules();
+          }
+        if (!velocityMode) {
+            currentSetpoint = new SwerveSetpoint(getChassisSpeeds(), getModuleStates());
+          }
+        
     }
 
     /**
@@ -159,6 +175,9 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
         }
 
         public void runVelocity(ChassisSpeeds speeds) {
+
+            velocityMode = true;
+
             // (1) 離散化速度：把速度調整成固定頻率 (讓控制更平滑、避免跳動太快)
             ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, SwerveConstants.loopPeriodSecs);
         
@@ -170,11 +189,15 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
                 SwerveConstants.moduleLimitsFree,
                 currentSetpoint,
                 discreteSpeeds,
-                SwerveConstants.loopPeriodSecs
-            );
+                SwerveConstants.loopPeriodSecs);
             SwerveModuleState[] setpointStates = currentSetpoint.moduleStates();
 
+            Logger.recordOutput("Drive/SwerveStates/SetpointsUnoptimized", setpointStatesUnoptimized);
+            Logger.recordOutput("Drive/SwerveStates/Setpoints", setpointStates);
+            Logger.recordOutput("Drive/SwerveChassisSpeeds/Setpoints", currentSetpoint.chassisSpeeds());
+
             setModuleState(setpointStates);
+
         }
         
 
@@ -326,5 +349,9 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
 
     public Command stopCommand() {
         return Commands.runOnce(SignalLogger::stop);
+    }
+    @AutoLogOutput(key = "Drive/SwerveChassisSpeeds/Measured")
+    private ChassisSpeeds getChassisSpeeds() {
+      return kinematics.toChassisSpeeds(getModuleStates());
     }
 }
