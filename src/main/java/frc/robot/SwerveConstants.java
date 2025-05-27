@@ -36,7 +36,7 @@ public final class SwerveConstants {
 	};
 
 	public static final ModuleLimits moduleLimitsFree =
-    new ModuleLimits(MAX_SPEED , MAX_ACCELERATION, Units.degreesToRadians(MAX_ANGULAR));
+    new ModuleLimits(MAX_SPEED , MAX_ACCELERATION, Units.degreesToRadians(1080.0));
 
 	public static final double loopPeriodSecs = 0.02;
 }

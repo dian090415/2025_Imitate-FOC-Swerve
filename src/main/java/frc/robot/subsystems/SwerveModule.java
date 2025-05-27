@@ -70,7 +70,7 @@ public class SwerveModule extends SubsystemBase implements IDashboardProvider {
 
         this.turnEncoder = new TurnEncoder(turnEncoderPort);
 
-        this.turnPid = new PIDController(2.35, 0.0, 0.0);
+        this.turnPid = new PIDController(2.5, 0.0, 0.0);
         // Angle use -0.5 to 0.5, Radian use -Math.PI to Math.PI.
         this.turnPid.enableContinuousInput(-0.5, 0.5);
 
@@ -87,6 +87,10 @@ public class SwerveModule extends SubsystemBase implements IDashboardProvider {
                         null,
                         this));
 
+    }
+
+    public double cancoder(){
+       return this.turnEncoder.getAbsolutePositionRotations();
     }
 
     public void resetEncoders() {
@@ -136,22 +140,23 @@ public class SwerveModule extends SubsystemBase implements IDashboardProvider {
         double driveFFVolts = driveFF.calculate(velocitySetpoint);
 
         // 轉為比例輸出（假設你用 PercentOutput 模式）
-        double driveFFOutput = driveFFVolts / 12.0;
+        // double driveFFOutput = driveFFVolts / 12.0;
+
+        double driveFFOutput = 0;
 
         // 速度除以最大速度 → 做 PID 控制（若有）或直接用比例控制
         double driveOutput = velocitySetpoint / SwerveConstants.MAX_SPEED;
 
         // 合併 feedforward 與輸出（若只用比例控制就加總）
-        // this.driveMotor.set(driveOutput + driveFFOutput);
+        this.driveMotor.set(driveOutput + driveFFOutput);
 
         double turnOutput = this.turnPid.calculate(
             this.turnEncoder.getAbsolutePositionRotations(), desiredState.angle.getRotations());
 
             SmartDashboard.putNumber("desiredState.angle.getRotations()", desiredState.angle.getRotations());
-            SmartDashboard.putNumber("encoder", this.turnEncoder.getAbsolutePositionRotations());
             
 
-        // this.turnMotor.set(turnOutput);
+        this.turnMotor.set(turnOutput);
     }
 
 

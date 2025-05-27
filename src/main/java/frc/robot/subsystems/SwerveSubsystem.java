@@ -64,7 +64,7 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
     private final SwerveDriveOdometry odometry;
     private final SwerveDrivePoseEstimator poseEstimator;
     private final Field2d field;
-    @AutoLogOutput private boolean velocityMode = false;
+    @AutoLogOutput private boolean velocityMode = true;
 
     // Publishers for tracking swerve drive poses
     private final StructPublisher<Pose2d> swerveNow = NetworkTableInstance.getDefault()
@@ -113,21 +113,21 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
         SmartDashboard.putData("ElasticSwerve/", new Sendable() {
             @Override
             public void initSendable(SendableBuilder builder) {
-                builder.setSmartDashboardType("SwerveDrive");
+                // builder.setSmartDashboardType("SwerveDrive");
 
-                builder.addDoubleProperty("FrontLeft Position", () -> frontLeft.getPosition().angle.getRadians(), null);
-                builder.addDoubleProperty("FrontLeft Velocity", () -> frontLeft.getState().speedMetersPerSecond, null);
+                // builder.addDoubleProperty("FrontLeft Position", () -> frontLeft.getPosition().angle.getRadians(), null);
+                // builder.addDoubleProperty("FrontLeft Velocity", () -> frontLeft.getState().speedMetersPerSecond, null);
 
-                builder.addDoubleProperty("FrontRight Position", () -> frontRight.getPosition().angle.getRadians(), null);
-                builder.addDoubleProperty("FrontRight Velocity", () -> frontRight.getState().speedMetersPerSecond, null);
+                // builder.addDoubleProperty("FrontRight Position", () -> frontRight.getPosition().angle.getRadians(), null);
+                // builder.addDoubleProperty("FrontRight Velocity", () -> frontRight.getState().speedMetersPerSecond, null);
 
-                builder.addDoubleProperty("BackLeft Position", () -> backLeft.getPosition().angle.getRadians(), null);
-                builder.addDoubleProperty("BackLeft Velocity", () -> backLeft.getState().speedMetersPerSecond, null);
+                // builder.addDoubleProperty("BackLeft Position", () -> backLeft.getPosition().angle.getRadians(), null);
+                // builder.addDoubleProperty("BackLeft Velocity", () -> backLeft.getState().speedMetersPerSecond, null);
 
-                builder.addDoubleProperty("BackRight Position", () -> backRight.getPosition().angle.getRadians(), null);
-                builder.addDoubleProperty("BackRight Velocity", () -> backRight.getState().speedMetersPerSecond, null);
+                // builder.addDoubleProperty("BackRight Position", () -> backRight.getPosition().angle.getRadians(), null);
+                // builder.addDoubleProperty("BackRight Velocity", () -> backRight.getState().speedMetersPerSecond, null);
 
-                builder.addDoubleProperty("Robot Heading", () -> getRotation().getRadians(), null);
+                // builder.addDoubleProperty("Robot Heading", () -> getRotation().getRadians(), null);
 
             }
         });
@@ -208,10 +208,10 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
      */
     public void setModuleState(SwerveModuleState[] states) {
         SwerveDriveKinematics.desaturateWheelSpeeds(states, SwerveConstants.MAX_SPEED);
-        this.frontLeft.setDesiredState(states[0]);
-        this.frontRight.setDesiredState(states[1]);
-        this.backLeft.setDesiredState(states[2]);
-        this.backRight.setDesiredState(states[3]);
+        this.frontLeft.setDesiredState(states[2]);
+        this.frontRight.setDesiredState(states[3]);
+        this.backLeft.setDesiredState(states[0]);
+        this.backRight.setDesiredState(states[1]);
     }
 
     /**
@@ -282,7 +282,7 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
     }
 
     public double getGyroAngle() {
-        return -this.gyro.getAngle();
+        return this.gyro.getAngle();
     }
 
     public Rotation2d getHeading() {
@@ -331,6 +331,12 @@ public class SwerveSubsystem extends SubsystemBase implements IDashboardProvider
         SmartDashboard.putData("Field", this.field);
         SmartDashboard.putBoolean("Gyro Connect", this.isGyroConnected());
         SmartDashboard.putNumber("GyroAngle", this.getGyroAngle());
+        SmartDashboard.putNumber("backLeftcancoder", this.backLeft.cancoder());
+        SmartDashboard.putNumber("backRightcancoder", this.backRight.cancoder());
+        SmartDashboard.putNumber("frontLeftcancoder", this.frontLeft.cancoder());
+        SmartDashboard.putNumber("frontLeftcancoder", this.frontLeft.cancoder());
+        
+        
     }
 
     public void test(){
