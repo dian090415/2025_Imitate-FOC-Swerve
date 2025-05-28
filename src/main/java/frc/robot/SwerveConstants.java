@@ -10,12 +10,12 @@ public final class SwerveConstants {
 	public static final double TRACK_LENGTH = Units.inchesToMeters(20.75);
 	public static final double WHEEL_RADIUS = Units.inchesToMeters(2.0);
 
-	public static final double MAX_SPEED = 2.0;
+	public static final double MAX_SPEED = 1.0;
 	public static final double MAX_ACCELERATION = 5.0;
 	public static final double MAX_ANGULAR = 90.0;
 	public static final double MAX_ANGULAR_ACCELERATION = 9.0;
-	public static final double DRIVE_GEAR_RATIO = 300.0 / 49.0;
-	public static final double TURN_GEAR_RATIO = 150.0 / 7.0;
+	public static final double DRIVE_GEAR_RATIO = 49.0 /300.0;
+	public static final double TURN_GEAR_RATIO = 7.0 /150.0;
 	public static final int MAX_VOLTAGE = 20;
 
 	public static final SwerveDriveKinematics swerveDriveKinematics = new SwerveDriveKinematics(

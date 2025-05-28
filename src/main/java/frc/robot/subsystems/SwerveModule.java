@@ -6,34 +6,12 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+
 import frc.robot.SwerveConstants;
 import frc.robot.lib.helpers.IDashboardProvider;
 import frc.robot.lib.motor.SwerveTalon;
 import frc.robot.lib.swerve.TurnEncoder;
-
-import com.ctre.phoenix6.SignalLogger;
-import com.ctre.phoenix6.controls.*;
-import com.ctre.phoenix6.hardware.*;
-import com.ctre.phoenix6.signals.*;
-import frc.robot.SwerveConstants;
-
-import static edu.wpi.first.units.Units.Second;
-import static edu.wpi.first.units.Units.Volts;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-
-import com.ctre.phoenix6.controls.VelocityDutyCycle;
-import com.ctre.phoenix6.controls.PositionDutyCycle;
-
-import com.ctre.phoenix6.SignalLogger;
-import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 
 public class SwerveModule extends SubsystemBase implements IDashboardProvider {
     private final SwerveTalon driveMotor;
@@ -41,17 +19,11 @@ public class SwerveModule extends SubsystemBase implements IDashboardProvider {
 
     private final TurnEncoder turnEncoder;
 
-    private final VelocityDutyCycle driveRequest = new VelocityDutyCycle(0);
-    private final PositionDutyCycle turnRequest = new PositionDutyCycle(0);
-
     private final PIDController turnPid;
 
     private final String motorName;
 
     private final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);// TODO
-
-    private final VoltageOut voltagRequire = new VoltageOut(0.0);
-    private final SysIdRoutine sysIdRoutine;
 
     /**
      * Constructs a SwerveModule and configures the driving and turning motor,
@@ -77,20 +49,14 @@ public class SwerveModule extends SubsystemBase implements IDashboardProvider {
         this.motorName = motorName;
         this.resetEncoders();
 
-        sysIdRoutine = new SysIdRoutine(
-                new SysIdRoutine.Config(Volts.of(2).per(Second), Volts.of(5),
-                        null, (state) -> SignalLogger.writeString("state", state.toString())),
-                new SysIdRoutine.Mechanism(
-                        (volts) -> {
-                            this.driveMotor.setControl(voltagRequire.withOutput(volts.in(Volts)));
-                        },
-                        null,
-                        this));
+        turnMotor.config_kP(2.5);
+        turnMotor.config_kI(0);
+        turnMotor.config_kD(0);
 
     }
 
-    public double cancoder(){
-       return this.turnEncoder.getAbsolutePositionRotations();
+    public double cancoder() {
+        return this.turnEncoder.getAbsolutePositionRotations();
     }
 
     public void resetEncoders() {
@@ -159,7 +125,6 @@ public class SwerveModule extends SubsystemBase implements IDashboardProvider {
         this.turnMotor.set(turnOutput);
     }
 
-
     // Put Drive Velocity and Turn Position to SmartDashboard.
     @Override
     public void putDashboard() {
@@ -174,33 +139,7 @@ public class SwerveModule extends SubsystemBase implements IDashboardProvider {
 
     // Stop module.
     public void stop() {
-        this.driveMotor.set(0.0);
-        this.turnMotor.set(0.0);
-    }
-
-    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return this.sysIdRoutine.quasistatic(direction);
-    }
-
-    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-        return this.sysIdRoutine.dynamic(direction);
-    }
-
-    public Command sysIdTest() {
-        return Commands.sequence(
-                this.sysIdQuasistatic(SysIdRoutine.Direction.kForward)
-                        .raceWith(new WaitUntilCommand(2)),
-                new WaitCommand(2),
-
-                this.sysIdQuasistatic(SysIdRoutine.Direction.kReverse)
-                        .raceWith(new WaitUntilCommand(2)),
-                new WaitCommand(2),
-
-                this.sysIdDynamic(SysIdRoutine.Direction.kForward)
-                        .raceWith(new WaitUntilCommand(2)),
-                new WaitCommand(2),
-
-                this.sysIdDynamic(SysIdRoutine.Direction.kReverse)
-                        .raceWith(new WaitUntilCommand(2)));
+        this.driveMotor.stopMotor();
+        this.turnMotor.stopMotor();
     }
 }

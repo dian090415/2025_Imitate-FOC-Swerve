@@ -1,5 +1,7 @@
 package frc.robot.joystick;
 
+import com.ctre.phoenix6.signals.NeutralModeValue;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.XboxController;
@@ -16,20 +18,22 @@ public class Driver extends XboxController {
     }
 
     public double getXDesiredSpeed() {
-        double speed = MathUtil.applyDeadband(this.getLeftY(), SwerveConstants.DEAD_BAND) * 1.0 * this.getBrake();
+        double speed = MathUtil.applyDeadband(this.getLeftY(), SwerveConstants.DEAD_BAND) * 1.0 * this.getBrake()*isstop();
         return this.xLimiter.calculate(speed);
     }
 
     public double getYDesiredSpeed() {
-        double speed = -MathUtil.applyDeadband(this.getLeftX(), SwerveConstants.DEAD_BAND) * 1.0 * this.getBrake();
+        double speed = -MathUtil.applyDeadband(this.getLeftX(), SwerveConstants.DEAD_BAND) * 1.0 * this.getBrake()*isstop();
         return this.yLimiter.calculate(speed);
     }
 
     public double getRotationSpeed() {
-        double speed = MathUtil.applyDeadband(this.getRightX(), SwerveConstants.DEAD_BAND) * 0.9 * this.getBrake();
+        double speed = -MathUtil.applyDeadband(this.getRightX(), SwerveConstants.DEAD_BAND) * 0.9 * this.getBrake()*isstop();
         return this.rotationLimiter.calculate(speed);
     }
-
+    public double isstop(){
+        return (this.getRightBumper() ? 0 : 1);
+    }
 
     public double getBrake() {
         return 1.0 - MathUtil.applyDeadband(this.getRightTriggerAxis(), SwerveConstants.DEAD_BAND) * 0.8;
